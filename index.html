@@ -181,6 +181,35 @@ button.secondary{background:transparent;color:var(--ink);}
 .roster-add-row input{margin-bottom:0;flex:1;}
 .roster-add-row button{width:auto;padding:9px 14px;}
 
+.log-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:12px 14px;
+  margin-bottom:10px;
+}
+.log-card:last-child{margin-bottom:0;}
+.log-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+  padding-bottom:8px;
+  border-bottom:1px dashed var(--line);
+}
+.log-card-count{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  color:var(--culture);
+}
+.log-card .field-label{margin-top:8px;}
+.log-card .field-label:first-of-type{margin-top:0;}
+.log-card p{
+  font-size:13px;
+  margin:2px 0 0;
+  color:var(--ink);
+}
+
 .recent-log{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);padding:8px 0;border-bottom:1px dashed var(--line);}
 .recent-log:last-child{border-bottom:none;}
 .recent-log b{color:var(--ink);}
@@ -592,15 +621,19 @@ async function renderOverview(){
   if(allLogs.length){
     recentList.innerHTML = allLogs.map(r=>{
       const att = r.attendance || {};
-      const names = (att.names || []);
-      const attParts = [];
-      if(names.length) attParts.push(names.length + ' orang: ' + names.join(', '));
-      if(att.extra) attParts.push(att.extra);
-      const attText = attParts.join(' · ');
+      const count = (att.names || []).length;
       return `
-      <div class="recent-log">
-        <b>${r.date} · ${r.session}</b> · leader: ${r.leader}<br>
-        ${r.topic}${r.note ? ' — "'+r.note+'"' : ''}${attText ? '<br>hadir: '+attText : ''}${r.extraTip ? '<br>tips tambahan: '+r.extraTip : ''}
+      <div class="log-card">
+        <div class="log-card-head">
+          <span class="date-mono">${r.date} · ${r.session}</span>
+          ${count ? `<span class="log-card-count">${count} orang hadir</span>` : ''}
+        </div>
+        <div class="field-label">Leader</div>
+        <p>${r.leader}</p>
+        <div class="field-label">Topik</div>
+        <p>${r.topic}</p>
+        ${r.note ? `<div class="field-label">Notes</div><p>${r.note}</p>` : ''}
+        ${r.extraTip ? `<div class="field-label">Tips Tambahan</div><p>${r.extraTip}</p>` : ''}
       </div>
     `;}).join('');
   } else {
