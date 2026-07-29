@@ -727,6 +727,7 @@ document.querySelectorAll('.main-tab').forEach(tab=>{
     tab.classList.add('active');
     document.getElementById('view-'+tab.dataset.view).classList.add('active');
     if(tab.dataset.view === 'overview') renderOverview();
+    if(tab.dataset.view === 'leader') renderTicket();
   });
 });
 
