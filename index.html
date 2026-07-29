@@ -470,12 +470,6 @@ async function renderTicket(){
   `;
 
   container.innerHTML = `
-    ${manualPoint ? `
-    <div class="panel manual-point-card">
-      <div class="field-label">📌 Poin Tambahan Hari Ini</div>
-      <p>${manualPoint}</p>
-    </div>
-    ` : ''}
     <div class="ticket">
       <div class="ticket-head">
         <span class="date-mono">${todayStr} · ${currentSession}</span>
@@ -494,6 +488,12 @@ async function renderTicket(){
       <div id="extraBlockContainer">${extraBlockHTML(topic, currentMode)}</div>
       ` : ''}
     </div>
+    ${manualPoint ? `
+    <div class="panel manual-point-card">
+      <div class="field-label">📌 Poin Tambahan Hari Ini</div>
+      <p>${manualPoint}</p>
+    </div>
+    ` : ''}
 
     <div class="panel">
       <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
