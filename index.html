@@ -181,16 +181,6 @@ button.secondary{background:transparent;color:var(--ink);}
 .roster-add-row input{margin-bottom:0;flex:1;}
 .roster-add-row button{width:auto;padding:9px 14px;}
 
-.manual-point-card{
-  border-left:4px solid var(--upsell);
-}
-.manual-point-card p{
-  font-size:14px;
-  color:var(--ink);
-  margin:0;
-  white-space:pre-wrap;
-}
-
 .recent-log{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);padding:8px 0;border-bottom:1px dashed var(--line);}
 .recent-log:last-child{border-bottom:none;}
 .recent-log b{color:var(--ink);}
@@ -233,13 +223,6 @@ button.secondary{background:transparent;color:var(--ink);}
   </div>
 
   <div class="view" id="view-overview">
-    <div class="panel">
-      <h3>Poin Manual Hari Ini</h3>
-      <label class="small">Untuk pengumuman/poin khusus di luar bank materi (opsional)</label>
-      <textarea id="manualPointInput" placeholder="mis. ada training baru minggu ini, tolong sampein ke semua staff pas briefing"></textarea>
-      <button id="saveManualPointBtn">Simpan Poin Manual</button>
-    </div>
-
     <div class="panel">
       <h3>Status Hari Ini</h3>
       <div id="outletStatusList"><div class="loading">Memuat data…</div></div>
@@ -323,8 +306,6 @@ function gsRun(fnName, ...args){
     case 'apiSaveLog': return gsCall('saveLog', {date: args[0], session: args[1], data: args[2]}, 'POST');
     case 'apiGetSessionDates': return gsCall('getSessionDates', {session: args[0]});
     case 'apiGetRecentLogs': return gsCall('getRecentLogs', {limit: args[0]});
-    case 'apiGetManualPoint': return gsCall('getManualPoint', {date: args[0]});
-    case 'apiSaveManualPoint': return gsCall('saveManualPoint', {date: args[0], point: args[1]}, 'POST');
     default: return Promise.reject(new Error('Unknown fn: '+fnName));
   }
 }
@@ -424,11 +405,10 @@ async function renderTicket(){
   const container = document.getElementById('ticketContainer');
   container.innerHTML = '<div class="loading">Menyiapkan tiket hari ini…</div>';
 
-  const [bank, roster, existing, manualPoint] = await Promise.all([
+  const [bank, roster, existing] = await Promise.all([
     gsRun('apiGetTopics'),
     gsRun('apiGetRoster'),
-    gsRun('apiGetLog', todayStr, currentSession),
-    gsRun('apiGetManualPoint', todayStr)
+    gsRun('apiGetLog', todayStr, currentSession)
   ]);
 
   const topic = bank[dayIndexOf(todayStr) % bank.length];
@@ -488,12 +468,6 @@ async function renderTicket(){
       <div id="extraBlockContainer">${extraBlockHTML(topic, currentMode)}</div>
       ` : ''}
     </div>
-    ${manualPoint ? `
-    <div class="panel manual-point-card">
-      <div class="field-label">📌 Poin Tambahan Hari Ini</div>
-      <p>${manualPoint}</p>
-    </div>
-    ` : ''}
 
     <div class="panel">
       <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
@@ -592,9 +566,6 @@ async function renderTicket(){
 
 // ---------- OVERVIEW VIEW ----------
 async function renderOverview(){
-  const manualVal = await gsRun('apiGetManualPoint', todayStr);
-  document.getElementById('manualPointInput').value = manualVal || '';
-
   const statusList = document.getElementById('outletStatusList');
   const recentList = document.getElementById('recentLogs');
   statusList.innerHTML = '<div class="loading">Memuat data…</div>';
@@ -639,16 +610,6 @@ async function renderOverview(){
   const bank = await gsRun('apiGetTopics');
   document.getElementById('topicCount').textContent = `${bank.length} topik di bank materi.`;
 }
-
-document.getElementById('saveManualPointBtn').addEventListener('click', async ()=>{
-  const val = document.getElementById('manualPointInput').value.trim();
-  const btn = document.getElementById('saveManualPointBtn');
-  btn.textContent = 'Menyimpan…';
-  btn.disabled = true;
-  await gsRun('apiSaveManualPoint', todayStr, val);
-  btn.textContent = 'Simpan Poin Manual';
-  btn.disabled = false;
-});
 
 document.getElementById('toggleRoster').addEventListener('click', async ()=>{
   const panel = document.getElementById('rosterManage');
