@@ -275,8 +275,7 @@ function autoSession(date){
   return 'Malam';
 }
 
-// ⚠️ GANTI ini dengan URL Apps Script yang udah lo deploy (yang berakhiran /exec)
-const APPS_SCRIPT_URL = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6sdrGHM2GBESHsVmrh21lDXesn7bBqnctkE5q-Jvjrli1MEPwPzF74vp8RFYsa78CXA/exec';
 
 // ---------- server bridge (via fetch, karena file ini di-host di luar Apps Script) ----------
 async function gsCall(action, params, method){
