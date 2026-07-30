@@ -155,6 +155,7 @@ button.secondary{background:transparent;color:var(--ink);}
 
 .role-group{margin-bottom:10px;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
 .role-group:last-child{margin-bottom:0;}
+#attendanceChips{margin-bottom:14px;}
 .role-header{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--paper-dark);cursor:pointer;user-select:none;}
 .role-title{font-family:'Poppins',sans-serif;font-weight:500;font-size:13.5px;color:var(--ink);}
 .role-right{display:flex;align-items:center;gap:10px;}
@@ -625,8 +626,8 @@ async function renderOverview(){
         <p>${r.leader}</p>
         <div class="field-label">Topik</div>
         <p>${r.topic}</p>
-        ${r.note ? `<div class="field-label">Notes</div><p>${r.note}</p>` : ''}
-        ${r.evaluation ? `<div class="field-label">Evaluasi Operasional</div><p>${r.evaluation}</p>` : ''}
+        ${r.evaluation ? `<div class="field-label">Evaluasi (Malam)</div><p>${r.evaluation}</p>` : ''}
+        ${r.note ? `<div class="field-label">Catatan Khusus</div><p>${r.note}</p>` : ''}
       </div>
     `;}).join('');
   } else {
