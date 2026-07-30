@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reload — Point of Briefing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -63,9 +64,9 @@ body{
 
 .tabs{display:flex;gap:0;margin-bottom:18px;border:2px solid var(--ink);border-radius:3px;overflow:hidden;}
 .main-tab{
-  flex:1;text-align:center;padding:9px 6px;
+  flex:1;text-align:center;padding:9px 3px;
   font-family:'Poppins',sans-serif;font-weight:500;
-  text-transform:uppercase;letter-spacing:0.04em;font-size:12.5px;
+  text-transform:uppercase;letter-spacing:0.01em;font-size:11px;
   cursor:pointer;background:var(--paper);color:var(--ink);user-select:none;
 }
 .main-tab + .main-tab{border-left:2px solid var(--ink);}
@@ -169,8 +170,14 @@ button.secondary{background:transparent;color:var(--ink);}
 .check-box{width:16px;height:16px;flex-shrink:0;border:1.5px solid var(--ink-soft);border-radius:4px;position:relative;background:#fff;}
 .check-row.checked .check-box{background:var(--culture);border-color:var(--culture);}
 .check-row.checked .check-box::after{content:'';position:absolute;left:4px;top:0px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.check-row.att-present .check-box{background:var(--culture);border-color:var(--culture);}
+.check-row.att-present .check-box::after{content:'';position:absolute;left:4px;top:0px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.check-row.att-absent .check-box{background:var(--upsell);border-color:var(--upsell);}
+.check-row.att-absent .check-box::after{content:'✕';position:absolute;left:1.5px;top:-3px;font-size:12px;color:#fff;line-height:1;}
+.check-row.att-absent .check-label{color:var(--upsell);}
 .check-label{font-family:'Poppins',sans-serif;font-weight:300;font-size:12px;color:var(--ink);line-height:1.25;}
 .check-row.checked .check-label{font-family:'Poppins',sans-serif;font-weight:500;color:var(--ink);}
+.check-row.att-present .check-label{font-family:'Poppins',sans-serif;font-weight:500;color:var(--ink);}
 
 .leader-list{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;margin-bottom:12px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;}
 
@@ -181,6 +188,18 @@ button.secondary{background:transparent;color:var(--ink);}
 .roster-add-row select{margin-bottom:0;width:38%;}
 .roster-add-row input{margin-bottom:0;flex:1;}
 .roster-add-row button{width:auto;padding:9px 14px;}
+
+.coverage-card{
+  background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:10px;
+}
+.coverage-card:last-child{margin-bottom:0;}
+.coverage-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.coverage-warn{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--upsell);text-transform:uppercase;letter-spacing:0.04em;
+}
+.coverage-action{font-size:13px;color:var(--ink);margin:0 0 10px;line-height:1.4;}
+.coverage-stats{display:flex;flex-wrap:wrap;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+.coverage-stats b{color:var(--ink);font-size:12px;}
 
 .log-card{
   background:#fff;
@@ -239,7 +258,7 @@ button.secondary{background:transparent;color:var(--ink);}
   .action{font-size:17px;}
   .check-row{padding:8px 6px;}
   .check-label{font-size:11px;}
-  .main-tab{font-size:11.5px;padding:10px 6px;}
+  .main-tab{font-size:10px;padding:9px 2px;letter-spacing:0;}
 }
 </style>
 </head>
@@ -255,11 +274,13 @@ button.secondary{background:transparent;color:var(--ink);}
   </div>
 
   <div class="tabs">
-    <div class="main-tab active" data-view="leader">Leader</div>
+    <div class="main-tab active" data-view="briefing">Briefing</div>
     <div class="main-tab" data-view="overview">Overview</div>
+    <div class="main-tab" data-view="log">Log</div>
+    <div class="main-tab" data-view="setting">Setting</div>
   </div>
 
-  <div class="view active" id="view-leader">
+  <div class="view active" id="view-briefing">
     <div class="panel">
       <h3>Leader Bertugas</h3>
       <div id="leaderPicker"></div>
@@ -274,8 +295,28 @@ button.secondary{background:transparent;color:var(--ink);}
     </div>
 
     <div class="panel">
-      <h3>Rekap 7 Hari Terakhir</h3>
-      <div id="weeklySummary"><div class="loading">Memuat data…</div></div>
+      <h3>Log Hari Ini</h3>
+      <div id="todayLogList"><div class="loading">Memuat data…</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Gak Hadir Briefing Hari Ini</h3>
+      <div id="todayAbsentList"><div class="loading">Memuat data…</div></div>
+    </div>
+  </div>
+
+  <div class="view" id="view-log">
+    <div class="panel">
+      <h3>Rekap</h3>
+      <label class="small">Periode</label>
+      <select id="rekapPeriod" style="margin-bottom:10px;">
+        <option value="7">Mingguan (7 hari)</option>
+        <option value="30">Bulanan (30 hari)</option>
+      </select>
+      <div style="display:flex;gap:8px;">
+        <button id="downloadExcelBtn" class="secondary" style="width:auto;flex:1;">Download Excel</button>
+        <button id="downloadPdfBtn" class="secondary" style="width:auto;flex:1;">Download PDF</button>
+      </div>
     </div>
 
     <div class="panel">
@@ -297,13 +338,9 @@ button.secondary{background:transparent;color:var(--ink);}
       <h3>Cakupan Topik</h3>
       <div id="topicCoverageList"><div class="loading">Memuat data…</div></div>
     </div>
+  </div>
 
-    <div class="panel">
-      <h3>Daftar Staff</h3>
-      <div class="add-topic-toggle" id="toggleRoster">kelola daftar staff</div>
-      <div class="hidden" id="rosterManage" style="margin-top:12px;"></div>
-    </div>
-
+  <div class="view" id="view-setting">
     <div class="panel">
       <h3>Bank Materi</h3>
       <div class="add-topic-toggle" id="toggleAddTopic">+ tambah topik baru</div>
@@ -324,8 +361,13 @@ button.secondary{background:transparent;color:var(--ink);}
       </div>
       <div id="topicCount" style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);"></div>
     </div>
-  </div>
 
+    <div class="panel">
+      <h3>Daftar Staff</h3>
+      <div class="add-topic-toggle" id="toggleRoster">kelola daftar staff</div>
+      <div class="hidden" id="rosterManage" style="margin-top:12px;"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -373,7 +415,8 @@ function gsRun(fnName, ...args){
     case 'apiGetRecentLogs': return gsCall('getRecentLogs', {limit: args[0]});
     case 'apiGetTopicCoverage': return gsCall('getTopicCoverage');
     case 'apiGetLeaderStats': return gsCall('getLeaderStats');
-    case 'apiGetWeeklySummary': return gsCall('getWeeklySummary');
+    case 'apiGetPeriodSummary': return gsCall('getPeriodSummary', {days: args[0]});
+    case 'apiGetTodayAbsent': return gsCall('getTodayAbsent');
     default: return Promise.reject(new Error('Unknown fn: '+fnName));
   }
 }
@@ -418,7 +461,7 @@ async function renderLeaderPicker(){
 
 // ---------- LEADER VIEW / TICKET ----------
 let currentMode = 'ticket';
-let selectedAttendance = new Set();
+let attendanceState = new Map();
 let evaluationValue = '';
 let extraTopicValue = '';
 let selectedModes = new Set(['Tiket']);
@@ -430,18 +473,21 @@ function chipListHTML(roster){
   return ROLES.map(role=>{
     const names = roster[role] || [];
     if(!names.length) return '';
-    const selectedCount = names.filter(n=>selectedAttendance.has(n)).length;
+    const presentCount = names.filter(n=>attendanceState.get(n)==='present').length;
+    const absentCount = names.filter(n=>attendanceState.get(n)==='absent').length;
     const isOpen = expandedRoles.has(role);
-    const rows = names.map(n=>`
-      <div class="check-row" data-name="${n.replace(/"/g,'&quot;')}">
-        <span class="check-box ${selectedAttendance.has(n)?'':''}"></span><span class="check-label">${n}</span>
+    const rows = names.map(n=>{
+      const st = attendanceState.get(n) || '';
+      return `
+      <div class="check-row att-${st}" data-name="${n.replace(/"/g,'&quot;')}">
+        <span class="check-box"></span><span class="check-label">${n}</span>
       </div>
-    `).join('');
+    `;}).join('');
     return `<div class="role-group" data-role-group="${role}">
       <div class="role-header" data-role="${role}">
         <span class="role-title">${role}</span>
         <span class="role-right">
-          <span class="count ${selectedCount>0?'has-selected':''}">${selectedCount}/${names.length}</span>
+          <span class="count ${presentCount>0?'has-selected':''}">${presentCount}✓${absentCount>0?' '+absentCount+'✕':''} /${names.length}</span>
           <span class="chevron ${isOpen?'open':''}">▾</span>
         </span>
       </div>
@@ -483,10 +529,10 @@ async function renderTicket(){
   const topic = bank[dayIndexOf(todayStr) % bank.length];
 
   if(!attendanceLoaded){
+    attendanceState = new Map();
     if(existing && existing.attendance){
-      selectedAttendance = new Set(existing.attendance.names || []);
-    } else {
-      selectedAttendance = new Set();
+      (existing.attendance.names || []).forEach(n=>attendanceState.set(n,'present'));
+      (existing.attendance.absent || []).forEach(n=>attendanceState.set(n,'absent'));
     }
     evaluationValue = (existing && existing.evaluation) ? existing.evaluation : '';
     selectedModes = (existing && existing.modes && existing.modes.length) ? new Set(existing.modes) : new Set(['Tiket']);
@@ -544,7 +590,7 @@ async function renderTicket(){
     </div>
 
     <div class="panel">
-      <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
+      <h3>Additional Notes</h3>
       <label class="small">Siapa yang hadir — tap nama</label>
       <div id="attendanceChips">${chipListHTML(roster)}</div>
       ${isMalam ? `
@@ -562,14 +608,6 @@ async function renderTicket(){
       <button id="submitLogBtn">${existing ? 'Update Catatan' : 'Tandai Selesai'}</button>
     </div>
   `;
-
-  // mark checked state properly (done after innerHTML since template above simplified)
-  container.querySelectorAll('.check-row[data-name]').forEach(row=>{
-    const name = row.dataset.name;
-    if(selectedAttendance.has(name)){
-      row.classList.add('checked');
-    }
-  });
 
   if(hasExtras){
     container.querySelectorAll('.mode-btn').forEach(btn=>{
@@ -611,15 +649,23 @@ async function renderTicket(){
   container.querySelectorAll('#attendanceChips .check-row').forEach(row=>{
     row.addEventListener('click', ()=>{
       const name = row.dataset.name;
-      if(selectedAttendance.has(name)) selectedAttendance.delete(name);
-      else selectedAttendance.add(name);
-      row.classList.toggle('checked');
+      const cur = attendanceState.get(name) || '';
+      let next;
+      if(cur === '') next = 'present';
+      else if(cur === 'present') next = 'absent';
+      else next = '';
+      if(next === '') attendanceState.delete(name);
+      else attendanceState.set(name, next);
+      row.classList.remove('att-present','att-absent');
+      if(next) row.classList.add('att-'+next);
       const roleGroup = row.closest('.role-group');
+      const roleNames = Array.from(roleGroup.querySelectorAll('.check-row')).map(r=>r.dataset.name);
+      const total = roleNames.length;
+      const presentN = roleNames.filter(n=>attendanceState.get(n)==='present').length;
+      const absentN = roleNames.filter(n=>attendanceState.get(n)==='absent').length;
       const countEl = roleGroup.querySelector('.count');
-      const total = roleGroup.querySelectorAll('.check-row').length;
-      const sel = roleGroup.querySelectorAll('.check-row.checked').length;
-      countEl.textContent = `${sel}/${total}`;
-      countEl.classList.toggle('has-selected', sel > 0);
+      countEl.textContent = `${presentN}✓${absentN>0?' '+absentN+'✕':''} /${total}`;
+      countEl.classList.toggle('has-selected', presentN > 0);
     });
   });
 
@@ -638,7 +684,10 @@ async function renderTicket(){
       return;
     }
     const leader = selectedLeaders.size ? Array.from(selectedLeaders).join(', ') : '(belum pilih leader)';
-    const attendance = {names: Array.from(selectedAttendance), extra: ''};
+    const presentList = [];
+    const absentList = [];
+    attendanceState.forEach((v,k)=>{ if(v==='present') presentList.push(k); else if(v==='absent') absentList.push(k); });
+    const attendance = {names: presentList, absent: absentList};
     const note = document.getElementById('note').value.trim();
     const evalEl = document.getElementById('evaluationInput');
     const evaluation = evalEl ? evalEl.value.trim() : '';
@@ -699,7 +748,7 @@ function renderLogsList(){
   loadMoreBtn.style.display = filtered.length > logDisplayCount ? 'block' : 'none';
 }
 
-async function renderOverview(){
+async function renderOverviewSummary(){
   const statusList = document.getElementById('outletStatusList');
   statusList.innerHTML = '<div class="loading">Memuat data…</div>';
 
@@ -720,24 +769,27 @@ async function renderOverview(){
   }
   statusList.innerHTML = rows;
 
-  // Rekap 7 Hari Terakhir
-  const weekly = await gsRun('apiGetWeeklySummary');
-  const weeklyEl = document.getElementById('weeklySummary');
-  weeklyEl.innerHTML = `
-    <div class="outlet-row">
-      <div>
-        <div class="outlet-name">${weekly.doneCount}/${weekly.totalPossible} sesi selesai</div>
-        <div class="outlet-meta">${weekly.percent}% dari target 7 hari terakhir</div>
-      </div>
-    </div>
-    ${weekly.leaders.map(l=>`
-      <div class="outlet-row">
-        <div><div class="outlet-name" style="font-size:13px;">${l.name}</div></div>
-        <div class="streak"><b>${l.count}</b><br>sesi</div>
-      </div>
-    `).join('')}
-  `;
+  // Log Hari Ini
+  const todayLogs = await gsRun('apiGetRecentLogs', 50);
+  const filteredToday = todayLogs.filter(r => r.date === todayStr);
+  const todayLogEl = document.getElementById('todayLogList');
+  todayLogEl.innerHTML = filteredToday.length ? filteredToday.map(logCardHTML).join('') : '<div class="recent-log">Belum ada briefing hari ini.</div>';
 
+  // Gak Hadir Briefing Hari Ini
+  const absentToday = await gsRun('apiGetTodayAbsent');
+  const absentEl = document.getElementById('todayAbsentList');
+  if(absentToday.length){
+    absentEl.innerHTML = absentToday.map(n=>`
+      <div class="outlet-row">
+        <div class="outlet-name" style="color:var(--upsell);">${n}</div>
+      </div>
+    `).join('');
+  } else {
+    absentEl.innerHTML = '<div class="recent-log">Belum ada yang ditandai absen hari ini.</div>';
+  }
+}
+
+async function renderLogTab(){
   // Log Terbaru (fetch a larger batch once, filter/paginate client-side)
   allLogsCache = await gsRun('apiGetRecentLogs', 200);
   logDisplayCount = 14;
@@ -747,9 +799,6 @@ async function renderOverview(){
   filterEl.innerHTML = '<option value="">Semua Leader</option>' + leaderList.map(n=>`<option value="${n}">${n}</option>`).join('');
   filterEl.value = '';
   renderLogsList();
-
-  const bank = await gsRun('apiGetTopics');
-  document.getElementById('topicCount').textContent = `${bank.length} topik di bank materi.`;
 
   // Performa Leader
   const leaderStats = await gsRun('apiGetLeaderStats');
@@ -773,13 +822,20 @@ async function renderOverview(){
   if(coverage.length){
     const sorted = coverage.slice().sort((a,b)=> a.roleplay - b.roleplay || a.total - b.total);
     coverageEl.innerHTML = sorted.map(c=>{
-      const short = c.action.length > 55 ? c.action.slice(0,55)+'…' : c.action;
       const warn = c.roleplay === 0;
+      const catLabel = CAT_LABEL[c.category] || c.category;
       return `
-      <div class="outlet-row">
-        <div>
-          <div class="outlet-name" style="font-size:12.5px;${warn?'color:var(--upsell);':''}">${short}</div>
-          <div class="outlet-meta">Total ${c.total} · Kuis ${c.quiz} · Roleplay ${c.roleplay}${c.lastDate ? ' · terakhir '+c.lastDate : ''}</div>
+      <div class="coverage-card">
+        <div class="coverage-head">
+          <span class="badge ${c.category}" style="font-size:10px;">${catLabel}</span>
+          ${warn ? '<span class="coverage-warn">belum pernah roleplay</span>' : ''}
+        </div>
+        <p class="coverage-action">${c.action}</p>
+        <div class="coverage-stats">
+          <span>Total <b>${c.total}</b></span>
+          <span>Kuis <b>${c.quiz}</b></span>
+          <span>Roleplay <b>${c.roleplay}</b></span>
+          ${c.lastDate ? `<span>Terakhir <b>${c.lastDate}</b></span>` : ''}
         </div>
       </div>
     `;}).join('');
@@ -787,6 +843,93 @@ async function renderOverview(){
     coverageEl.innerHTML = '<div class="recent-log">Belum ada data.</div>';
   }
 }
+
+async function refreshSettingTab(){
+  const bank = await gsRun('apiGetTopics');
+  document.getElementById('topicCount').textContent = `${bank.length} topik di bank materi.`;
+}
+
+function getRekapLabel(days){
+  return days === '30' || days === 30 ? 'Bulanan' : 'Mingguan';
+}
+
+async function downloadExcel(){
+  const btn = document.getElementById('downloadExcelBtn');
+  btn.textContent = 'Menyiapkan…';
+  btn.disabled = true;
+  try{
+    const days = document.getElementById('rekapPeriod').value;
+    const label = getRekapLabel(days);
+    const summary = await gsRun('apiGetPeriodSummary', Number(days));
+    const summarySheet = [
+      ['Rekap ' + label, ''],
+      ['Periode (hari)', days],
+      ['Sesi selesai', summary.doneCount + ' / ' + summary.totalPossible],
+      ['Persentase', summary.percent + '%'],
+      [],
+      ['Leader', 'Jumlah Sesi']
+    ];
+    summary.leaders.forEach(l=> summarySheet.push([l.name, l.count]));
+
+    const detailHeader = ['Tanggal','Sesi','Leader','Topik','Metode','Hadir','Absen','Evaluasi','Catatan'];
+    const detailRows = summary.entries.map(e=>[e.date, e.session, e.leader, e.topic, e.modes, e.present, e.absent, e.evaluation, e.note]);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summarySheet), 'Ringkasan');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([detailHeader, ...detailRows]), 'Detail Log');
+    XLSX.writeFile(wb, `Rekap ${label} - ${todayStr}.xlsx`);
+  }catch(e){
+    alert('Gagal bikin file Excel: ' + e.message);
+  }
+  btn.textContent = 'Download Excel';
+  btn.disabled = false;
+}
+
+async function downloadPdf(){
+  const btn = document.getElementById('downloadPdfBtn');
+  btn.textContent = 'Menyiapkan…';
+  btn.disabled = true;
+  try{
+    const days = document.getElementById('rekapPeriod').value;
+    const label = getRekapLabel(days);
+    const summary = await gsRun('apiGetPeriodSummary', Number(days));
+    const rowsHtml = summary.entries.map(e=>`
+      <tr>
+        <td>${e.date}</td><td>${e.session}</td><td>${e.leader}</td><td>${e.topic}</td>
+        <td>${e.modes}</td><td>${e.present}</td><td>${e.absent}</td><td>${e.evaluation}</td><td>${e.note}</td>
+      </tr>
+    `).join('');
+    const leaderRowsHtml = summary.leaders.map(l=>`<tr><td>${l.name}</td><td>${l.count}</td></tr>`).join('');
+    const html = `
+      <html><head><title>Rekap ${label} - ${todayStr}</title>
+      <style>
+        body{font-family:sans-serif;padding:20px;}
+        h1{font-size:18px;} h2{font-size:14px;margin-top:24px;}
+        table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+        th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;}
+        th{background:#f0f0f0;}
+      </style></head><body>
+      <h1>Rekap ${label} — Reload Point of Briefing</h1>
+      <p>Periode: ${days} hari terakhir · Sesi selesai: ${summary.doneCount}/${summary.totalPossible} (${summary.percent}%)</p>
+      <h2>Performa Leader</h2>
+      <table><tr><th>Leader</th><th>Jumlah Sesi</th></tr>${leaderRowsHtml}</table>
+      <h2>Detail Log</h2>
+      <table><tr><th>Tanggal</th><th>Sesi</th><th>Leader</th><th>Topik</th><th>Metode</th><th>Hadir</th><th>Absen</th><th>Evaluasi</th><th>Catatan</th></tr>${rowsHtml}</table>
+      </body></html>
+    `;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>{ w.print(); }, 300);
+  }catch(e){
+    alert('Gagal bikin PDF: ' + e.message);
+  }
+  btn.textContent = 'Download PDF';
+  btn.disabled = false;
+}
+
+document.getElementById('downloadExcelBtn').addEventListener('click', downloadExcel);
+document.getElementById('downloadPdfBtn').addEventListener('click', downloadPdf);
 
 document.getElementById('logLeaderFilter').addEventListener('change', (e)=>{
   logLeaderFilterValue = e.target.value;
@@ -875,8 +1018,10 @@ document.querySelectorAll('.main-tab').forEach(tab=>{
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('view-'+tab.dataset.view).classList.add('active');
-    if(tab.dataset.view === 'overview') renderOverview();
-    if(tab.dataset.view === 'leader') renderTicket();
+    if(tab.dataset.view === 'briefing') renderTicket();
+    if(tab.dataset.view === 'overview') renderOverviewSummary();
+    if(tab.dataset.view === 'log') renderLogTab();
+    if(tab.dataset.view === 'setting') refreshSettingTab();
   });
 });
 
