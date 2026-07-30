@@ -381,8 +381,6 @@ async function renderLeaderPicker(){
 // ---------- LEADER VIEW / TICKET ----------
 let currentMode = 'ticket';
 let selectedAttendance = new Set();
-let extraNamesValue = '';
-let extraTipValue = '';
 let evaluationValue = '';
 let attendanceLoaded = false;
 let expandedRoles = new Set();
@@ -447,12 +445,9 @@ async function renderTicket(){
   if(!attendanceLoaded){
     if(existing && existing.attendance){
       selectedAttendance = new Set(existing.attendance.names || []);
-      extraNamesValue = existing.attendance.extra || '';
     } else {
       selectedAttendance = new Set();
-      extraNamesValue = '';
     }
-    extraTipValue = (existing && existing.extraTip) ? existing.extraTip : '';
     evaluationValue = (existing && existing.evaluation) ? existing.evaluation : '';
     attendanceLoaded = true;
   }
@@ -505,13 +500,9 @@ async function renderTicket(){
       <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
       <label class="small">Siapa yang hadir — tap nama</label>
       <div id="attendanceChips">${chipListHTML(roster)}</div>
-      <label class="small" style="margin-top:10px;">+ nama lain (opsional, pisah koma)</label>
-      <input type="text" id="extraNames" placeholder="mis. staff freelance/trainee" value="${extraNamesValue.replace(/"/g,'&quot;')}">
       ${isMalam ? `
-      <label class="small">Evaluasi Operasional Hari Ini</label>
+      <label class="small" style="margin-top:10px;">Evaluasi Operasional Hari Ini</label>
       <textarea id="evaluationInput" placeholder="mis. stok protein bar hampir habis, AC di area X mati jam makan siang, dst">${evaluationValue.replace(/</g,'&lt;')}</textarea>
-      <label class="small">Tips tambahan (opsional, kalau ada)</label>
-      <textarea id="extraTip" placeholder="mis. ada kejadian baru hari ini yang perlu di-share">${extraTipValue.replace(/</g,'&lt;')}</textarea>
       ` : ''}
       <label class="small">Catatan (opsional)</label>
       <textarea id="note" placeholder="mis. staff masih ragu buat praktekin langsung">${existing ? existing.note : ''}</textarea>
@@ -530,9 +521,6 @@ async function renderTicket(){
   if(hasExtras){
     container.querySelectorAll('.mode-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        extraNamesValue = document.getElementById('extraNames').value;
-        const tipEl = document.getElementById('extraTip');
-        if(tipEl) extraTipValue = tipEl.value;
         const evalEl = document.getElementById('evaluationInput');
         if(evalEl) evaluationValue = evalEl.value;
         currentMode = btn.dataset.mode;
@@ -582,18 +570,15 @@ async function renderTicket(){
 
   document.getElementById('submitLogBtn').addEventListener('click', async ()=>{
     const leader = selectedLeaders.size ? Array.from(selectedLeaders).join(', ') : '(belum pilih leader)';
-    const extra = document.getElementById('extraNames').value.trim();
-    const attendance = {names: Array.from(selectedAttendance), extra};
+    const attendance = {names: Array.from(selectedAttendance), extra: ''};
     const note = document.getElementById('note').value.trim();
-    const tipEl = document.getElementById('extraTip');
-    const extraTip = tipEl ? tipEl.value.trim() : '';
     const evalEl = document.getElementById('evaluationInput');
     const evaluation = evalEl ? evalEl.value.trim() : '';
     const btn = document.getElementById('submitLogBtn');
     btn.textContent = 'Menyimpan…';
     btn.disabled = true;
     try{
-      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, extraTip, evaluation, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
+      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, evaluation, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
       renderTicket();
     }catch(e){
       btn.textContent = 'Gagal — coba lagi';
@@ -643,7 +628,6 @@ async function renderOverview(){
         <p>${r.topic}</p>
         ${r.note ? `<div class="field-label">Notes</div><p>${r.note}</p>` : ''}
         ${r.evaluation ? `<div class="field-label">Evaluasi Operasional</div><p>${r.evaluation}</p>` : ''}
-        ${r.extraTip ? `<div class="field-label">Tips Tambahan</div><p>${r.extraTip}</p>` : ''}
       </div>
     `;}).join('');
   } else {
