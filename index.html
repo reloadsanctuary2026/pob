@@ -300,9 +300,9 @@ const CAT_LABEL = {mindset:'Hospitality Mindset', culture:'Service Culture', ups
 
 function autoSession(date){
   const h = date.getHours() + date.getMinutes()/60;
-  if(h < 5) return 'Malam';
-  if(h < 11.5) return 'Pagi';
-  if(h < 17) return 'Sore';
+  if(h < 2) return 'Malam';
+  if(h < 12) return 'Pagi';
+  if(h < 18) return 'Sore';
   return 'Malam';
 }
 
