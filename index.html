@@ -658,10 +658,15 @@ async function renderOverview(){
     recentList.innerHTML = allLogs.map(r=>{
       const att = r.attendance || {};
       const count = (att.names || []).length;
+      let timeStr = '';
+      if(r.completedAt){
+        const dt = new Date(r.completedAt);
+        if(!isNaN(dt)) timeStr = ' · ' + dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+      }
       return `
       <div class="log-card">
         <div class="log-card-head">
-          <span class="date-mono">${r.date} · ${r.session}</span>
+          <span class="date-mono">${r.date} · ${r.session}${timeStr}</span>
           ${count ? `<span class="log-card-count">${count} orang hadir</span>` : ''}
         </div>
         <div class="field-label">Leader</div>
