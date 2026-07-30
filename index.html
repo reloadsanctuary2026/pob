@@ -529,11 +529,11 @@ async function renderTicket(){
 
     <div class="panel">
       <label class="small">Topik Tambahan (isi kalau ada topik lain yang dibicarain di sini)</label>
-      <textarea id="extraTopicInput" placeholder="mis. bahas juga soal jadwal libur lebaran">${extraTopicValue.replace(/</g,'&lt;')}</textarea>
+      <textarea id="extraTopicInput" placeholder="mis. bahas juga soal awareness di floor">${extraTopicValue.replace(/</g,'&lt;')}</textarea>
     </div>
 
     <div class="panel">
-      <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
+      <h3>${existing ? 'Additional Notes' : 'Tandai Briefing Selesai'}</h3>
       <label class="small">Siapa yang hadir — tap nama</label>
       <div id="attendanceChips">${chipListHTML(roster)}</div>
       ${isMalam ? `
