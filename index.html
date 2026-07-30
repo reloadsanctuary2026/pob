@@ -274,13 +274,23 @@ button.secondary{background:transparent;color:var(--ink);}
     </div>
 
     <div class="panel">
+      <h3>Rekap 7 Hari Terakhir</h3>
+      <div id="weeklySummary"><div class="loading">Memuat data…</div></div>
+    </div>
+
+    <div class="panel">
       <h3>Performa Leader</h3>
       <div id="leaderStatsList"><div class="loading">Memuat data…</div></div>
     </div>
 
     <div class="panel">
       <h3>Log Terbaru</h3>
+      <label class="small">Filter leader</label>
+      <select id="logLeaderFilter" style="margin-bottom:10px;">
+        <option value="">Semua Leader</option>
+      </select>
       <div id="recentLogs"><div class="loading">Memuat log…</div></div>
+      <button id="loadMoreLogsBtn" class="secondary" style="margin-top:10px;display:none;">Muat lebih banyak</button>
     </div>
 
     <div class="panel">
@@ -363,6 +373,7 @@ function gsRun(fnName, ...args){
     case 'apiGetRecentLogs': return gsCall('getRecentLogs', {limit: args[0]});
     case 'apiGetTopicCoverage': return gsCall('getTopicCoverage');
     case 'apiGetLeaderStats': return gsCall('getLeaderStats');
+    case 'apiGetWeeklySummary': return gsCall('getWeeklySummary');
     default: return Promise.reject(new Error('Unknown fn: '+fnName));
   }
 }
@@ -529,11 +540,11 @@ async function renderTicket(){
 
     <div class="panel">
       <label class="small">Topik Tambahan (isi kalau ada topik lain yang dibicarain di sini)</label>
-      <textarea id="extraTopicInput" placeholder="mis. bahas juga soal awareness di floor">${extraTopicValue.replace(/</g,'&lt;')}</textarea>
+      <textarea id="extraTopicInput" placeholder="mis. bahas juga soal jadwal libur lebaran">${extraTopicValue.replace(/</g,'&lt;')}</textarea>
     </div>
 
     <div class="panel">
-      <h3>${existing ? 'Additional Notes' : 'Tandai Briefing Selesai'}</h3>
+      <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
       <label class="small">Siapa yang hadir — tap nama</label>
       <div id="attendanceChips">${chipListHTML(roster)}</div>
       ${isMalam ? `
@@ -648,11 +659,49 @@ async function renderTicket(){
 }
 
 // ---------- OVERVIEW VIEW ----------
+let allLogsCache = [];
+let logDisplayCount = 14;
+let logLeaderFilterValue = '';
+
+function logCardHTML(r){
+  const att = r.attendance || {};
+  const count = (att.names || []).length;
+  let timeStr = '';
+  if(r.completedAt){
+    const dt = new Date(r.completedAt);
+    if(!isNaN(dt)) timeStr = dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+  }
+  return `
+    <div class="log-card">
+      <div class="log-card-head">
+        <span class="date-mono">${r.date}${timeStr ? ' · '+timeStr : ''}</span>
+        ${count ? `<span class="log-card-count">${count} orang hadir</span>` : ''}
+      </div>
+      <div class="field-label">Leader</div>
+      <p>${r.leader}</p>
+      <div class="field-label">Topik</div>
+      <p>${r.topic}${r.extraTopic ? '<br><br>+ '+r.extraTopic : ''}</p>
+      ${r.modes && r.modes.length ? `<div class="field-label">Metode</div><p>${r.modes.join(', ')}</p>` : ''}
+      ${r.evaluation ? `<div class="field-label">Evaluasi (Malam)</div><p>${r.evaluation}</p>` : ''}
+      ${r.note ? `<div class="field-label">Catatan Khusus</div><p>${r.note}</p>` : ''}
+    </div>
+  `;
+}
+
+function renderLogsList(){
+  const recentList = document.getElementById('recentLogs');
+  const filtered = logLeaderFilterValue
+    ? allLogsCache.filter(r => r.leader && r.leader.split(',').map(s=>s.trim()).indexOf(logLeaderFilterValue) !== -1)
+    : allLogsCache;
+  const toShow = filtered.slice(0, logDisplayCount);
+  recentList.innerHTML = toShow.length ? toShow.map(logCardHTML).join('') : '<div class="recent-log">Belum ada log.</div>';
+  const loadMoreBtn = document.getElementById('loadMoreLogsBtn');
+  loadMoreBtn.style.display = filtered.length > logDisplayCount ? 'block' : 'none';
+}
+
 async function renderOverview(){
   const statusList = document.getElementById('outletStatusList');
-  const recentList = document.getElementById('recentLogs');
   statusList.innerHTML = '<div class="loading">Memuat data…</div>';
-  recentList.innerHTML = '';
 
   let rows = '';
   for(const session of SESSIONS){
@@ -671,34 +720,33 @@ async function renderOverview(){
   }
   statusList.innerHTML = rows;
 
-  const allLogs = await gsRun('apiGetRecentLogs', 14);
-  if(allLogs.length){
-    recentList.innerHTML = allLogs.map(r=>{
-      const att = r.attendance || {};
-      const count = (att.names || []).length;
-      let timeStr = '';
-      if(r.completedAt){
-        const dt = new Date(r.completedAt);
-        if(!isNaN(dt)) timeStr = dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-      }
-      return `
-      <div class="log-card">
-        <div class="log-card-head">
-          <span class="date-mono">${r.date}${timeStr ? ' · '+timeStr : ''}</span>
-          ${count ? `<span class="log-card-count">${count} orang hadir</span>` : ''}
-        </div>
-        <div class="field-label">Leader</div>
-        <p>${r.leader}</p>
-        <div class="field-label">Topik</div>
-        <p>${r.topic}${r.extraTopic ? '<br><br>+ '+r.extraTopic : ''}</p>
-        ${r.modes && r.modes.length ? `<div class="field-label">Metode</div><p>${r.modes.join(', ')}</p>` : ''}
-        ${r.evaluation ? `<div class="field-label">Evaluasi (Malam)</div><p>${r.evaluation}</p>` : ''}
-        ${r.note ? `<div class="field-label">Catatan Khusus</div><p>${r.note}</p>` : ''}
+  // Rekap 7 Hari Terakhir
+  const weekly = await gsRun('apiGetWeeklySummary');
+  const weeklyEl = document.getElementById('weeklySummary');
+  weeklyEl.innerHTML = `
+    <div class="outlet-row">
+      <div>
+        <div class="outlet-name">${weekly.doneCount}/${weekly.totalPossible} sesi selesai</div>
+        <div class="outlet-meta">${weekly.percent}% dari target 7 hari terakhir</div>
       </div>
-    `;}).join('');
-  } else {
-    recentList.innerHTML = '<div class="recent-log">Belum ada log.</div>';
-  }
+    </div>
+    ${weekly.leaders.map(l=>`
+      <div class="outlet-row">
+        <div><div class="outlet-name" style="font-size:13px;">${l.name}</div></div>
+        <div class="streak"><b>${l.count}</b><br>sesi</div>
+      </div>
+    `).join('')}
+  `;
+
+  // Log Terbaru (fetch a larger batch once, filter/paginate client-side)
+  allLogsCache = await gsRun('apiGetRecentLogs', 200);
+  logDisplayCount = 14;
+  logLeaderFilterValue = '';
+  const filterEl = document.getElementById('logLeaderFilter');
+  const leaderList = await gsRun('apiGetLeaders');
+  filterEl.innerHTML = '<option value="">Semua Leader</option>' + leaderList.map(n=>`<option value="${n}">${n}</option>`).join('');
+  filterEl.value = '';
+  renderLogsList();
 
   const bank = await gsRun('apiGetTopics');
   document.getElementById('topicCount').textContent = `${bank.length} topik di bank materi.`;
@@ -739,6 +787,17 @@ async function renderOverview(){
     coverageEl.innerHTML = '<div class="recent-log">Belum ada data.</div>';
   }
 }
+
+document.getElementById('logLeaderFilter').addEventListener('change', (e)=>{
+  logLeaderFilterValue = e.target.value;
+  logDisplayCount = 14;
+  renderLogsList();
+});
+
+document.getElementById('loadMoreLogsBtn').addEventListener('click', ()=>{
+  logDisplayCount += 14;
+  renderLogsList();
+});
 
 document.getElementById('toggleRoster').addEventListener('click', async ()=>{
   const panel = document.getElementById('rosterManage');
