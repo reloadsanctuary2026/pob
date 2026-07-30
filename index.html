@@ -211,6 +211,14 @@ button.secondary{background:transparent;color:var(--ink);}
   color:var(--ink);
 }
 
+.method-picker{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.method-chip{
+  font-family:'Poppins',sans-serif;font-weight:500;font-size:12.5px;
+  padding:7px 13px;border:1.5px solid var(--ink);border-radius:20px;cursor:pointer;user-select:none;
+  background:transparent;color:var(--ink);
+}
+.method-chip.selected{background:var(--ink);color:var(--paper);}
+
 .recent-log{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);padding:8px 0;border-bottom:1px dashed var(--line);}
 .recent-log:last-child{border-bottom:none;}
 .recent-log b{color:var(--ink);}
@@ -259,8 +267,18 @@ button.secondary{background:transparent;color:var(--ink);}
     </div>
 
     <div class="panel">
+      <h3>Performa Leader</h3>
+      <div id="leaderStatsList"><div class="loading">Memuat data…</div></div>
+    </div>
+
+    <div class="panel">
       <h3>Log Terbaru</h3>
       <div id="recentLogs"><div class="loading">Memuat log…</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Cakupan Topik</h3>
+      <div id="topicCoverageList"><div class="loading">Memuat data…</div></div>
     </div>
 
     <div class="panel">
@@ -336,6 +354,8 @@ function gsRun(fnName, ...args){
     case 'apiSaveLog': return gsCall('saveLog', {date: args[0], session: args[1], data: args[2]}, 'POST');
     case 'apiGetSessionDates': return gsCall('getSessionDates', {session: args[0]});
     case 'apiGetRecentLogs': return gsCall('getRecentLogs', {limit: args[0]});
+    case 'apiGetTopicCoverage': return gsCall('getTopicCoverage');
+    case 'apiGetLeaderStats': return gsCall('getLeaderStats');
     default: return Promise.reject(new Error('Unknown fn: '+fnName));
   }
 }
@@ -382,6 +402,7 @@ async function renderLeaderPicker(){
 let currentMode = 'ticket';
 let selectedAttendance = new Set();
 let evaluationValue = '';
+let selectedModes = new Set(['Tiket']);
 let attendanceLoaded = false;
 let expandedRoles = new Set();
 let currentSession = autoSession(new Date());
@@ -449,6 +470,7 @@ async function renderTicket(){
       selectedAttendance = new Set();
     }
     evaluationValue = (existing && existing.evaluation) ? existing.evaluation : '';
+    selectedModes = (existing && existing.modes && existing.modes.length) ? new Set(existing.modes) : new Set(['Tiket']);
     attendanceLoaded = true;
   }
 
@@ -506,6 +528,12 @@ async function renderTicket(){
       ` : ''}
       <label class="small">Catatan (opsional)</label>
       <textarea id="note" placeholder="mis. staff masih ragu buat praktekin langsung">${existing ? existing.note : ''}</textarea>
+      <label class="small">Tadi briefingnya pake apa aja?</label>
+      <div class="method-picker">
+        <div class="method-chip ${selectedModes.has('Tiket')?'selected':''}" data-method="Tiket">Tiket</div>
+        <div class="method-chip ${selectedModes.has('Kuis')?'selected':''}" data-method="Kuis">Kuis</div>
+        <div class="method-chip ${selectedModes.has('Roleplay')?'selected':''}" data-method="Roleplay">Roleplay</div>
+      </div>
       <button id="submitLogBtn">${existing ? 'Update Catatan' : 'Tandai Selesai'}</button>
     </div>
   `;
@@ -568,17 +596,31 @@ async function renderTicket(){
     });
   });
 
+  container.querySelectorAll('.method-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const method = chip.dataset.method;
+      if(selectedModes.has(method)) selectedModes.delete(method);
+      else selectedModes.add(method);
+      chip.classList.toggle('selected');
+    });
+  });
+
   document.getElementById('submitLogBtn').addEventListener('click', async ()=>{
+    if(selectedModes.size === 0){
+      alert('Pilih minimal 1 metode yang dipake (Tiket/Kuis/Roleplay) dulu ya.');
+      return;
+    }
     const leader = selectedLeaders.size ? Array.from(selectedLeaders).join(', ') : '(belum pilih leader)';
     const attendance = {names: Array.from(selectedAttendance), extra: ''};
     const note = document.getElementById('note').value.trim();
     const evalEl = document.getElementById('evaluationInput');
     const evaluation = evalEl ? evalEl.value.trim() : '';
+    const modes = Array.from(selectedModes);
     const btn = document.getElementById('submitLogBtn');
     btn.textContent = 'Menyimpan…';
     btn.disabled = true;
     try{
-      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, evaluation, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
+      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, evaluation, modes, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
       renderTicket();
     }catch(e){
       btn.textContent = 'Gagal — coba lagi';
@@ -626,6 +668,7 @@ async function renderOverview(){
         <p>${r.leader}</p>
         <div class="field-label">Topik</div>
         <p>${r.topic}</p>
+        ${r.modes && r.modes.length ? `<div class="field-label">Metode</div><p>${r.modes.join(', ')}</p>` : ''}
         ${r.evaluation ? `<div class="field-label">Evaluasi (Malam)</div><p>${r.evaluation}</p>` : ''}
         ${r.note ? `<div class="field-label">Catatan Khusus</div><p>${r.note}</p>` : ''}
       </div>
@@ -636,6 +679,42 @@ async function renderOverview(){
 
   const bank = await gsRun('apiGetTopics');
   document.getElementById('topicCount').textContent = `${bank.length} topik di bank materi.`;
+
+  // Performa Leader
+  const leaderStats = await gsRun('apiGetLeaderStats');
+  const leaderStatsEl = document.getElementById('leaderStatsList');
+  if(leaderStats.length){
+    leaderStatsEl.innerHTML = leaderStats.map(l=>`
+      <div class="outlet-row">
+        <div>
+          <div class="outlet-name">${l.name}${l.low ? ' <span style="color:var(--upsell);font-family:monospace;font-size:10px;text-transform:uppercase;">· jarang</span>' : ''}</div>
+        </div>
+        <div class="streak"><b>${l.count}</b><br>sesi</div>
+      </div>
+    `).join('');
+  } else {
+    leaderStatsEl.innerHTML = '<div class="recent-log">Belum ada data.</div>';
+  }
+
+  // Cakupan Topik
+  const coverage = await gsRun('apiGetTopicCoverage');
+  const coverageEl = document.getElementById('topicCoverageList');
+  if(coverage.length){
+    const sorted = coverage.slice().sort((a,b)=> a.roleplay - b.roleplay || a.total - b.total);
+    coverageEl.innerHTML = sorted.map(c=>{
+      const short = c.action.length > 55 ? c.action.slice(0,55)+'…' : c.action;
+      const warn = c.roleplay === 0;
+      return `
+      <div class="outlet-row">
+        <div>
+          <div class="outlet-name" style="font-size:12.5px;${warn?'color:var(--upsell);':''}">${short}</div>
+          <div class="outlet-meta">Total ${c.total} · Kuis ${c.quiz} · Roleplay ${c.roleplay}${c.lastDate ? ' · terakhir '+c.lastDate : ''}</div>
+        </div>
+      </div>
+    `;}).join('');
+  } else {
+    coverageEl.innerHTML = '<div class="recent-log">Belum ada data.</div>';
+  }
 }
 
 document.getElementById('toggleRoster').addEventListener('click', async ()=>{
