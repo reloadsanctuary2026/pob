@@ -162,13 +162,13 @@ button.secondary{background:transparent;color:var(--ink);}
 .role-header .count.has-selected{color:var(--culture);}
 .chevron{font-size:11px;color:var(--ink-soft);transition:transform 0.15s;display:inline-block;}
 .chevron.open{transform:rotate(180deg);}
-.check-list{padding:4px 6px;background:#fff;}
-.check-row{display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--paper);cursor:pointer;user-select:none;}
-.check-row:last-child{border-bottom:none;}
-.check-box{width:18px;height:18px;flex-shrink:0;border:1.5px solid var(--ink-soft);border-radius:4px;position:relative;background:#fff;}
+.check-list{padding:6px;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;}
+.check-row{display:flex;align-items:center;gap:8px;padding:7px 6px;cursor:pointer;user-select:none;border-radius:4px;}
+.check-row:hover{background:var(--paper-dark);}
+.check-box{width:16px;height:16px;flex-shrink:0;border:1.5px solid var(--ink-soft);border-radius:4px;position:relative;background:#fff;}
 .check-row.checked .check-box{background:var(--culture);border-color:var(--culture);}
-.check-row.checked .check-box::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
-.check-label{font-family:'Poppins',sans-serif;font-weight:300;font-size:13.5px;color:var(--ink);}
+.check-row.checked .check-box::after{content:'';position:absolute;left:4px;top:0px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.check-label{font-family:'Poppins',sans-serif;font-weight:300;font-size:12px;color:var(--ink);line-height:1.25;}
 .check-row.checked .check-label{font-family:'Poppins',sans-serif;font-weight:500;color:var(--ink);}
 
 .leader-list{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;margin-bottom:12px;padding:4px 6px;}
@@ -221,7 +221,8 @@ button.secondary{background:transparent;color:var(--ink);}
   .roster-add-row{flex-direction:column;}
   .roster-add-row select, .roster-add-row input, .roster-add-row button{width:100%;}
   .action{font-size:17px;}
-  .check-row{padding:11px 8px;}
+  .check-row{padding:8px 6px;}
+  .check-label{font-size:11.5px;}
   .main-tab{font-size:11.5px;padding:10px 6px;}
 }
 </style>
@@ -382,6 +383,7 @@ let currentMode = 'ticket';
 let selectedAttendance = new Set();
 let extraNamesValue = '';
 let extraTipValue = '';
+let evaluationValue = '';
 let attendanceLoaded = false;
 let expandedRoles = new Set();
 let currentSession = autoSession(new Date());
@@ -451,6 +453,7 @@ async function renderTicket(){
       extraNamesValue = '';
     }
     extraTipValue = (existing && existing.extraTip) ? existing.extraTip : '';
+    evaluationValue = (existing && existing.evaluation) ? existing.evaluation : '';
     attendanceLoaded = true;
   }
 
@@ -505,6 +508,8 @@ async function renderTicket(){
       <label class="small" style="margin-top:10px;">+ nama lain (opsional, pisah koma)</label>
       <input type="text" id="extraNames" placeholder="mis. staff freelance/trainee" value="${extraNamesValue.replace(/"/g,'&quot;')}">
       ${isMalam ? `
+      <label class="small">Evaluasi Operasional Hari Ini</label>
+      <textarea id="evaluationInput" placeholder="mis. stok protein bar hampir habis, AC di area X mati jam makan siang, dst">${evaluationValue.replace(/</g,'&lt;')}</textarea>
       <label class="small">Tips tambahan (opsional, kalau ada)</label>
       <textarea id="extraTip" placeholder="mis. ada kejadian baru hari ini yang perlu di-share">${extraTipValue.replace(/</g,'&lt;')}</textarea>
       ` : ''}
@@ -528,6 +533,8 @@ async function renderTicket(){
         extraNamesValue = document.getElementById('extraNames').value;
         const tipEl = document.getElementById('extraTip');
         if(tipEl) extraTipValue = tipEl.value;
+        const evalEl = document.getElementById('evaluationInput');
+        if(evalEl) evaluationValue = evalEl.value;
         currentMode = btn.dataset.mode;
         renderTicket();
       });
@@ -580,11 +587,13 @@ async function renderTicket(){
     const note = document.getElementById('note').value.trim();
     const tipEl = document.getElementById('extraTip');
     const extraTip = tipEl ? tipEl.value.trim() : '';
+    const evalEl = document.getElementById('evaluationInput');
+    const evaluation = evalEl ? evalEl.value.trim() : '';
     const btn = document.getElementById('submitLogBtn');
     btn.textContent = 'Menyimpan…';
     btn.disabled = true;
     try{
-      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, extraTip, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
+      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, extraTip, evaluation, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
       renderTicket();
     }catch(e){
       btn.textContent = 'Gagal — coba lagi';
@@ -633,6 +642,7 @@ async function renderOverview(){
         <div class="field-label">Topik</div>
         <p>${r.topic}</p>
         ${r.note ? `<div class="field-label">Notes</div><p>${r.note}</p>` : ''}
+        ${r.evaluation ? `<div class="field-label">Evaluasi Operasional</div><p>${r.evaluation}</p>` : ''}
         ${r.extraTip ? `<div class="field-label">Tips Tambahan</div><p>${r.extraTip}</p>` : ''}
       </div>
     `;}).join('');
