@@ -661,12 +661,12 @@ async function renderOverview(){
       let timeStr = '';
       if(r.completedAt){
         const dt = new Date(r.completedAt);
-        if(!isNaN(dt)) timeStr = ' · ' + dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+        if(!isNaN(dt)) timeStr = dt.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
       }
       return `
       <div class="log-card">
         <div class="log-card-head">
-          <span class="date-mono">${r.date} · ${r.session}${timeStr}</span>
+          <span class="date-mono">${r.date}${timeStr ? ' · '+timeStr : ''}</span>
           ${count ? `<span class="log-card-count">${count} orang hadir</span>` : ''}
         </div>
         <div class="field-label">Leader</div>
