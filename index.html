@@ -409,6 +409,7 @@ async function renderLeaderPicker(){
 let currentMode = 'ticket';
 let selectedAttendance = new Set();
 let evaluationValue = '';
+let extraTopicValue = '';
 let selectedModes = new Set(['Tiket']);
 let attendanceLoaded = false;
 let expandedRoles = new Set();
@@ -478,6 +479,7 @@ async function renderTicket(){
     }
     evaluationValue = (existing && existing.evaluation) ? existing.evaluation : '';
     selectedModes = (existing && existing.modes && existing.modes.length) ? new Set(existing.modes) : new Set(['Tiket']);
+    extraTopicValue = (existing && existing.extraTopic) ? existing.extraTopic : '';
     attendanceLoaded = true;
   }
 
@@ -526,6 +528,11 @@ async function renderTicket(){
     </div>
 
     <div class="panel">
+      <label class="small">Topik Tambahan (isi kalau ada topik lain yang dibicarain di sini)</label>
+      <textarea id="extraTopicInput" placeholder="mis. bahas juga soal jadwal libur lebaran">${extraTopicValue.replace(/</g,'&lt;')}</textarea>
+    </div>
+
+    <div class="panel">
       <h3>${existing ? 'Update Catatan Briefing' : 'Tandai Briefing Selesai'}</h3>
       <label class="small">Siapa yang hadir — tap nama</label>
       <div id="attendanceChips">${chipListHTML(roster)}</div>
@@ -558,6 +565,8 @@ async function renderTicket(){
       btn.addEventListener('click', ()=>{
         const evalEl = document.getElementById('evaluationInput');
         if(evalEl) evaluationValue = evalEl.value;
+        const extraTopicEl = document.getElementById('extraTopicInput');
+        if(extraTopicEl) extraTopicValue = extraTopicEl.value;
         currentMode = btn.dataset.mode;
         renderTicket();
       });
@@ -622,12 +631,14 @@ async function renderTicket(){
     const note = document.getElementById('note').value.trim();
     const evalEl = document.getElementById('evaluationInput');
     const evaluation = evalEl ? evalEl.value.trim() : '';
+    const extraTopicEl = document.getElementById('extraTopicInput');
+    const extraTopic = extraTopicEl ? extraTopicEl.value.trim() : '';
     const modes = Array.from(selectedModes);
     const btn = document.getElementById('submitLogBtn');
     btn.textContent = 'Menyimpan…';
     btn.disabled = true;
     try{
-      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, evaluation, modes, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
+      await gsRun('apiSaveLog', todayStr, currentSession, {leader, attendance, note, evaluation, extraTopic, modes, topic: topic.action, category: topic.category, completedAt: new Date().toISOString()});
       renderTicket();
     }catch(e){
       btn.textContent = 'Gagal — coba lagi';
@@ -679,7 +690,7 @@ async function renderOverview(){
         <div class="field-label">Leader</div>
         <p>${r.leader}</p>
         <div class="field-label">Topik</div>
-        <p>${r.topic}</p>
+        <p>${r.topic}${r.extraTopic ? '<br><br>+ '+r.extraTopic : ''}</p>
         ${r.modes && r.modes.length ? `<div class="field-label">Metode</div><p>${r.modes.join(', ')}</p>` : ''}
         ${r.evaluation ? `<div class="field-label">Evaluasi (Malam)</div><p>${r.evaluation}</p>` : ''}
         ${r.note ? `<div class="field-label">Catatan Khusus</div><p>${r.note}</p>` : ''}
