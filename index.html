@@ -107,7 +107,7 @@ body{
 
 select, input[type=text], textarea{
   width:100%;font-family:'Poppins',sans-serif;font-weight:300;font-size:14px;padding:9px 10px;
-  border:1px solid var(--ink);border-radius:3px;background:#fff;color:var(--ink);margin-bottom:12px;
+  border:1px solid var(--ink);border-radius:3px;background:var(--paper-dark);color:var(--ink);margin-bottom:12px;
 }
 textarea{resize:vertical;min-height:56px;}
 label.small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);display:block;margin-bottom:5px;}
@@ -142,11 +142,11 @@ button.secondary{background:transparent;color:var(--ink);}
 }
 .mode-btn.active{background:var(--stamp);color:var(--paper);}
 
-.extra-block{margin:14px 16px 16px;padding:12px 14px;border:1px dashed var(--ink);border-radius:4px;background:rgba(255,255,255,0.5);}
+.extra-block{margin:14px 16px 16px;padding:12px 14px;border:1px dashed var(--ink);border-radius:4px;background:rgba(255,255,255,0.04);}
 .extra-block .field-label{margin-bottom:8px;}
 .quiz-option{
   display:block;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;border:1px solid var(--line);
-  border-radius:3px;background:#fff;font-family:'Poppins',sans-serif;font-weight:300;font-size:13px;cursor:pointer;color:var(--ink);
+  border-radius:3px;background:var(--paper-dark);font-family:'Poppins',sans-serif;font-weight:300;font-size:13px;cursor:pointer;color:var(--ink);
 }
 .quiz-option:last-child{margin-bottom:0;}
 .quiz-option.correct{border-color:var(--culture);background:rgba(110,231,160,0.12);}
@@ -164,10 +164,10 @@ button.secondary{background:transparent;color:var(--ink);}
 .role-header .count.has-selected{color:var(--culture);}
 .chevron{font-size:11px;color:var(--ink-soft);transition:transform 0.15s;display:inline-block;}
 .chevron.open{transform:rotate(180deg);}
-.check-list{padding:6px;background:#fff;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 6px;}
+.check-list{padding:6px;background:var(--paper-dark);display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 6px;}
 .check-row{display:flex;align-items:center;gap:8px;padding:7px 6px;cursor:pointer;user-select:none;border-radius:4px;}
 .check-row:hover{background:var(--paper-dark);}
-.check-box{width:16px;height:16px;flex-shrink:0;border:1.5px solid var(--ink-soft);border-radius:4px;position:relative;background:#fff;}
+.check-box{width:16px;height:16px;flex-shrink:0;border:1.5px solid var(--ink-soft);border-radius:4px;position:relative;background:var(--paper);}
 .check-row.checked .check-box{background:var(--culture);border-color:var(--culture);}
 .check-row.checked .check-box::after{content:'';position:absolute;left:4px;top:0px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
 .check-row.att-present .check-box{background:var(--culture);border-color:var(--culture);}
@@ -179,7 +179,7 @@ button.secondary{background:transparent;color:var(--ink);}
 .check-row.checked .check-label{font-family:'Poppins',sans-serif;font-weight:500;color:var(--ink);}
 .check-row.att-present .check-label{font-family:'Poppins',sans-serif;font-weight:500;color:var(--ink);}
 
-.leader-list{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;margin-bottom:12px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;}
+.leader-list{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--paper-dark);margin-bottom:12px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;}
 
 .roster-manage-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px;}
 .roster-manage-row:last-child{border-bottom:none;}
@@ -190,7 +190,7 @@ button.secondary{background:transparent;color:var(--ink);}
 .roster-add-row button{width:auto;padding:9px 14px;}
 
 .coverage-card{
-  background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:10px;
+  background:var(--paper-dark);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:10px;
 }
 .coverage-card:last-child{margin-bottom:0;}
 .coverage-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
@@ -202,7 +202,7 @@ button.secondary{background:transparent;color:var(--ink);}
 .coverage-stats b{color:var(--ink);font-size:12px;}
 
 .log-card{
-  background:#fff;
+  background:var(--paper-dark);
   border:1px solid var(--line);
   border-radius:6px;
   padding:12px 14px;
